@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String       @id @default(cuid())
+  name      String
+  email     String       @unique
+  password  String
+  image     String?
+  role      Role         @default(USER)
+  createdAt DateTime     @default(now())
+
+  registrations Registration[]
+  reviews       Review[]
+  events        Event[]     @relation("UserEvents") // All events created by this user
+}
+
+model Event {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  date        DateTime
+  location    String
+  image       String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userId      String
+  user        User         @relation("UserEvents", fields: [userId], references: [id]) // Creator
+
+  registrations Registration[]
+  reviews       Review[]
+}
+
+model Registration {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId]) // prevent duplicate registrations
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
